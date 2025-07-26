@@ -11,7 +11,7 @@ const PreviewModal = ({ data, onConfirm, onCancel }) => {
     while (attempts < maxRetries) {
       try {
         const response = await fetch(
-          "https://neworder-hgrw.onrender.com/api/send-email",
+          "https://neworder-hgrw.onrender.com/send-email",
           {
             method: "POST",
             headers: {
