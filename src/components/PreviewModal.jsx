@@ -10,6 +10,7 @@ const PreviewModal = ({ data, onConfirm, onCancel }) => {
 
     while (attempts < maxRetries) {
       try {
+        console.log("Sending email..."); // debug
         const response = await fetch(
           "https://neworder-hgrw.onrender.com/send-email",
           {
@@ -25,18 +26,18 @@ const PreviewModal = ({ data, onConfirm, onCancel }) => {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        alert("Email sent successfully!");
+        alert("✅ Email sent successfully!");
         setIsSending(false);
         return;
       } catch (error) {
-        console.error(`Attempt ${attempts + 1} failed:`, error);
+        console.error(`❌ Attempt ${attempts + 1} failed:`, error);
         attempts++;
         if (attempts === maxRetries) {
-          alert("Failed to send email after multiple attempts");
+          alert("⚠️ Failed to send email after multiple attempts");
           setIsSending(false);
           return;
         }
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 3000)); // ⏱ 3s delay
       }
     }
   };

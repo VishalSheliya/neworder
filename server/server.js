@@ -5,24 +5,40 @@ const cors = require("cors");
 
 const app = express();
 
-// Allow CORS for frontend running on localhost and Vercel
+// ✅ Allow CORS for Vercel, localhost, and wildcard subdomains
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://neworder-tau.vercel.app"],
+    origin: (origin, callback) => {
+      const allowed = [
+        "http://localhost:5173",
+        "https://neworder-tau.vercel.app",
+      ];
+      if (
+        !origin ||
+        allowed.includes(origin) ||
+        /\.vercel\.app$/.test(origin)
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed"));
+      }
+    },
     methods: ["GET", "POST"],
     credentials: true,
   })
 );
 app.use(express.json());
 
+// ✅ Nodemailer config
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: "luminluxedata@gmail.com",
-    pass: "jhpt dijp jipd xvjg",
+    pass: "jhpt dijp jipd xvjg", // consider using environment variable for security
   },
 });
 
+// ✅ PDF content generator
 const generateContent = (data) => {
   const renderJewelryDetails = (details) => {
     if (!details) return [];
@@ -53,12 +69,10 @@ const generateContent = (data) => {
         lines.push(`Necklace Size: ${details.necklaceSize} inches`);
         break;
       case "Pendant":
+        lines.push(`Chain Option: ${details.chainOption}`);
         if (details.chainOption === "With Chain") {
-          lines.push(`Chain Option: ${details.chainOption}`);
           lines.push(`Jumping: ${details.jumping ? "Yes" : "No"}`);
           lines.push(`Chain Length: ${details.chainLength} mm`);
-        } else {
-          lines.push(`Chain Option: ${details.chainOption}`);
         }
         break;
       default:
@@ -68,32 +82,29 @@ const generateContent = (data) => {
   };
 
   let content = [];
-  content.push("Order Preview");
-  content.push("");
+  content.push("Order Preview\n");
   content.push("Order Information");
   content.push(`Order ID: ${data.orderId}`);
   content.push(`Client Name: ${data.clientName}`);
-  content.push(`Quantity: ${data.quantity}`);
-  content.push("");
+  content.push(`Quantity: ${data.quantity}\n`);
   content.push("Product Information");
-  if (data.file) {
-    content.push(`Design File: ${data.file}`);
-  } else {
-    content.push(`Product Name: ${data.productName}`);
-    content.push(`Price: ₹${data.price}`);
-  }
-  content.push(`Jewelry Type: ${data.jewelryType}`);
-  content.push("");
+  content.push(
+    data.file
+      ? `Design File: ${data.file}`
+      : `Product Name: ${data.productName}\nPrice: ₹${data.price}`
+  );
+  content.push(`Jewelry Type: ${data.jewelryType}\n`);
   content.push("Jewelry Specifications");
   content.push(...renderJewelryDetails(data.jewelryDetails));
 
   return content;
 };
 
+// ✅ Email send route
 app.post("/send-email", async (req, res) => {
   const orderData = req.body;
+  console.log("Incoming email request:", orderData); // 🐞 Debug
 
-  // Generate PDF with PDFKit
   const doc = new PDFDocument();
   let buffers = [];
   doc.on("data", buffers.push.bind(buffers));
@@ -102,7 +113,7 @@ app.post("/send-email", async (req, res) => {
 
     const mailOptions = {
       from: "luminluxedata@gmail.com",
-      to: "vishalsheliya14@gmail.com",
+      to: "vishalsheliya14@gmail.com", // or use orderData.email if dynamic
       subject: "New Order",
       text: "Please find the attached order details.",
       attachments: [
@@ -123,16 +134,15 @@ app.post("/send-email", async (req, res) => {
     });
   });
 
-  // Add content to PDF
   const content = generateContent(orderData);
-  content.forEach((line) => {
-    doc.text(line, { continued: false });
-  });
+  content.forEach((line) => doc.text(line));
   doc.end();
 });
 
-const PORT = process.env.PORT || 3001;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// ✅ Health check route for mobile test
+app.get("/", (req, res) => {
+  res.send("✅ Backend is working.");
 });
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
