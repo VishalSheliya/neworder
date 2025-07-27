@@ -11,16 +11,13 @@ const PreviewModal = ({ data, onConfirm, onCancel }) => {
     while (attempts < maxRetries) {
       try {
         console.log("Sending email..."); // debug
-        const response = await fetch(
-          "https://neworder-hgrw.onrender.com/send-email",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(data),
-          }
-        );
+        const response = await fetch("/api/send-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
